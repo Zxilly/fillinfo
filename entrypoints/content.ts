@@ -4,3 +4,7 @@ export default defineContentScript({
     console.log('Hello content.');
   },
 });
+
+function main() {
+
+}

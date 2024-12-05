@@ -1,37 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { OpenAI } from 'openai';
+import React from 'react';
+import {OpenAI} from 'openai';
+import {useStorage} from "@/entrypoints/hooks/useStorage.ts";
+import {readFile} from "@/entrypoints/utils/utils";
+import { Form, Button } from 'react-bootstrap';
+
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function() {
-  const [apiKey, setApiKey] = useState('');
-  const [apiEndpoint, setApiEndpoint] = useState('');
-  const [model, setModel] = useState('');
-  const [filename, setFileName] = useState('');
-
-  useEffect(() => {
-    browser.storage.local.get(['apiKey', 'apiEndpoint']).then((result) => {
-      if (result.apiKey) setApiKey(result.apiKey as string);
-      if (result.apiEndpoint) setApiEndpoint(result.apiEndpoint as string);
-      if (result.model) setModel(result.model as string);
-      if (result.filename) setFileName(result.filename as string);
-    });
-  }, []);
+export default function () {
+  const {data: apiKey, updateData: setApiKey} = useStorage('apiKey', '');
+  const {data: apiEndpoint, updateData: setApiEndpoint} = useStorage('apiEndpoint', '');
+  const {data: model, updateData: setModel} = useStorage('model', '');
+  const {data: file, updateData: setFile} = useStorage('file', '');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target && e.target.result) {
-          browser.storage.local.set({ file: e.target.result });
+      readFile(e.target.files[0]).then((content) => {
+        if (content.length > 2048) {
+          alert('文件大小不能超过 2k');
+          e.target.value = '';
+          return;
         }
-      };
-      setFileName(e.target.files[0].name);
-      reader.readAsDataURL(e.target.files[0]);
+        setFile(content);
+      })
     }
-  };
-
-  const saveSettings = () => {
-    browser.storage.local.set({ apiKey, apiEndpoint, file: file });
   };
 
   const testApi = async () => {
@@ -64,41 +56,49 @@ export default function() {
       console.error(error);
       alert('API 测试失败');
     }
-    saveSettings();
   };
 
   return (
     <div className="settings">
       <h2>设置</h2>
-      <div>
-        <label>OpenAI Key:</label>
-        <input
-          type="text"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>OpenAI Endpoint:</label>
-        <input
-          type="text"
-          value={apiEndpoint}
-          onChange={(e) => setApiEndpoint(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>模型:</label>
-        <input
-          type="text"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>参考文件:</label>
-        <input type="file" accept=".txt" onChange={handleFileUpload} />
-      </div>
-      <button onClick={testApi}>测试 API</button>
+      <Form>
+        <Form.Group controlId="apiKey">
+          <Form.Label>OpenAI Key:</Form.Label>
+          <Form.Control
+            type="text"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+        </Form.Group>
+
+        <Form.Group controlId="apiEndpoint">
+          <Form.Label>OpenAI Endpoint:</Form.Label>
+          <Form.Control
+            type="text"
+            value={apiEndpoint}
+            onChange={(e) => setApiEndpoint(e.target.value)}
+          />
+        </Form.Group>
+
+        <Form.Group controlId="model">
+          <Form.Label>模型:</Form.Label>
+          <Form.Control
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          />
+        </Form.Group>
+
+        <Form.Group controlId="referenceFile">
+          <Form.Label>参考文件:</Form.Label>
+          <Form.Text>文件大小: {file?.length ?? 0}</Form.Text>
+          <Form.Control type="file" accept=".txt" onChange={handleFileUpload} />
+        </Form.Group>
+
+        <Button variant="primary" onClick={testApi}>
+          测试 API
+        </Button>
+      </Form>
     </div>
   );
 }

@@ -1,3 +1,3 @@
-# WXT + React
+# Fill info AI
 
-This template should help get you started developing with React in WXT.
+使用 LLM 自动从简历中提取信息，填充网页。
